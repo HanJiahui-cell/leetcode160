@@ -1,68 +1,34 @@
 package leetcode160
 
-// 1. 实现 Equatable 接口以支持 Option 类型的 == 和 != 比较 [1]
-class ListNode <: Equatable<ListNode> {
-    var val: Int64
-    var next: ?ListNode
+/**
+ * Definition for singly-linked list.
+ * public class ListNode {
+ *     public var val: Int64
+ *     public var next: ?ListNode
+ *     public init() {
+ *         val = 0
+ *         next = None
+ *     }
+ *     public init(val: Int64) {
+ *         this.val = val
+ *         next = None
+ *     }
+ * }
+ */
 
-    public init(val: Int64) {
-        this.val = val
-        this.next = None
-    }
+class Solution {
+    func reverseList(head: ?ListNode): ?ListNode {
+        var prev: ?ListNode = None // 初始前驱节点为空 [2]
+        var curr = head
 
-    public init(val: Int64, next: ?ListNode) {
-        this.val = val
-        this.next = next
-    }
-
-    // 2. 使用正确的内置函数 refEq 比较引用地址 [6]
-    public operator func ==(that: ListNode): Bool {
-        return refEq(this, that) 
-    }
-
-    public operator func !=(that: ListNode): Bool {
-        return !refEq(this, that)
-    }
-}
-
-func getIntersectionNode(headA: ?ListNode, headB: ?ListNode): ?ListNode {
-    var pA = headA
-    var pB = headB
-
-    while (pA != pB) {
-        // 3. 处理 Option 类型赋值
-        if (pA == None) {
-            pA = headB
-        } else {
-            // 使用 getOrThrow() 获取内部 String/ListNode 对象以访问成员 [2]
-            // 这样返回的类型依然是 ?ListNode，避免了 ?. 导致的类型嵌套问题
-            pA = pA.getOrThrow().next
+        // 使用 while 配合模式匹配解构 Option 类型，遍历链表 [5]
+        while (let Some(node) <- curr) {
+            let nextNode = node.next   // 1. 临时保存当前节点的下一个节点，防止断链 [5]
+            node.next = prev           // 2. 将当前节点指向前一个节点，实现反转
+            prev = curr                // 3. prev 指针向后移动
+            curr = nextNode            // 4. curr 指针向后移动
         }
 
-        if (pB == None) {
-            pB = headA
-        } else {
-            pB = pB.getOrThrow().next
-        }
+        return prev // 最终 prev 指向原链表的尾节点，即新链表的头节点
     }
-
-    return pA
-}
-
-main(): Int64 {
-    // 构造测试数据
-    let common = ListNode(8)
-    let headA = ListNode(4, ListNode(1, common))
-    let headB = ListNode(5, ListNode(6, ListNode(1, common)))
-
-    // 调用函数以消除 unused 警告 [3]
-    let result = getIntersectionNode(headA, headB)
-
-    if (let Some(node) <- result) {
-        println("Found intersection: ${node.val}")
-    } else {
-        println("No intersection")
-    }
-
-    return 0
 }
