@@ -1,109 +1,95 @@
 package leetcode160
-
-import std.console.* // 用于终端输入输出
+// import 语句必须位于文件最顶部 [2]
+import std.collection.*
+import std.env.* // 用于终端输入输出 [1][4]
 import std.convert.* // 用于字符串转数值
 
-// 定义链表节点
-class ListNode {
+// 定义二叉树节点
+public class BinaryTreeNode {
     public var val: Int64
-    public var next: ?ListNode
+    public var left: ?BinaryTreeNode = None
+    public var right: ?BinaryTreeNode = None
     public init(val: Int64) {
         this.val = val
-        this.next = None
+
     }
 }
 
 class Solution {
-    public func isPalindrome(head: ?ListNode): Bool {
-        // 使用 match 显式处理 None，规避类型推导错误 [5][6]
-        let h = match (head) {
-            case None => return true
-            case Some(v) => v
-        }
-        
-        // 模式匹配处理 next 节点，避免使用未实现 Equatable 的 == 判等 [2]
-        if (let None <- h.next) {
-            return true
-        }
-
-        // 1. 快慢指针找中点
-        var slow: ?ListNode = head
-        var fast: ?ListNode = head
-        while (let Some(f) <- fast) {
-            if (let Some(nxt) <- f.next) {
-                fast = nxt.next
-                if (let Some(s) <- slow) {
-                    slow = s.next
-                }
-            } else {
-                break
-            }
-        }
-
-        // 2. 反转后半部分
-        var prev: ?ListNode = None
-        var curr = slow
-        while (let Some(node) <- curr) {
-            let nextNode = node.next
-            node.next = prev
-            prev = curr
-            curr = nextNode
-        }
-
-        // 3. 比较数值
-        var left = head
-        var right = prev
-        var result = true
-        while (let Some(rNode) <- right) {
-            if (let Some(lNode) <- left) {
-                if (lNode.val != rNode.val) {
-                    result = false
-                    break
-                }
-                left = lNode.next
-                right = rNode.next
-            } else {
-                break
-            }
-        }
+    // 中序遍历主函数
+    public func inorderTraversal(root: ?BinaryTreeNode): ArrayList<Int64> {
+        let result = ArrayList<Int64>()
+        dfs(root, result)
         return result
     }
-}
 
-// 主函数：支持终端输入
-main() {
-    println("请输入链表数值（以空格隔开，按回车结束）：")
-    let input = Console.stdIn.readln()
-    
-    match (input) {
-        case Some(line) =>
-            let nums = line.split(" ", removeEmpty: true)
-            if (nums.size == 0) {
-                println("结果: true (空链表)")
-                return 0
-            }
-
-            // 根据输入数组构建链表
-            let dummy = ListNode(0)
-            var cur = dummy
-            for (numStr in nums) {
-                try {
-                    let val = Int64.parse(numStr)
-                    let newNode = ListNode(val)
-                    cur.next = newNode
-                    cur = newNode
-                } catch (e: Exception) {
-                    continue
-                }
-            }
-
-            // 调用算法并输出
-            let sol = Solution()
-            let result = sol.isPalindrome(dummy.next)
-            println("是否回文: ${result}")
-
-        case None => println("未检测到输入")
+    // 递归辅助函数
+    private func dfs(node: ?BinaryTreeNode, res: ArrayList<Int64>): Unit {
+        match (node) {
+            case Some(n) => 
+                dfs(n.left, res)
+                res.add(n.val)
+                dfs(n.right, res)
+            case None => ()
+        }
     }
-    return 0
 }
 
+// 辅助函数：根据终端输入的层序遍历字符串构建二叉树
+func buildTree(input: String): ?BinaryTreeNode {
+    let nodes = input.split(",")
+    if (nodes.size == 0 || nodes[0] == "null" || nodes[0] == "") {
+        return None
+    }
+
+    let root = BinaryTreeNode(Int64.parse(nodes[0]))
+    let queue = ArrayList<?BinaryTreeNode>()
+    queue.add(root)
+    
+    var i = 1
+    var j = 0
+    while (i < nodes.size) {
+        let parent = queue[j]
+        j++
+
+        match (parent) {
+            case Some(p) =>
+                // 左孩子
+                if (i < nodes.size && nodes[i] != "null") {
+                    let leftNode = BinaryTreeNode(Int64.parse(nodes[i]))
+                    p.left = leftNode
+                    queue.add(leftNode)
+                }
+                i++
+                // 右孩子
+                if (i < nodes.size && nodes[i] != "null") {
+                    let rightNode = BinaryTreeNode(Int64.parse(nodes[i]))
+                    p.right = rightNode
+                    queue.add(rightNode)
+                }
+                i++
+            case None => ()
+        }
+    }
+    return root
+}
+
+main() {
+    let stdout = getStdOut() // 获取标准输出实例 [4]
+    let stdin = getStdIn()   // 获取标准输入实例 [4]
+
+    stdout.write("请输入层序遍历的二叉树节点（用逗号隔开，空节点用null表示，如 1,2,3,null,null,4）：\n")
+    
+    // 从标准输入读取一行 [1][6]
+    match (stdin.readln()) {
+        case Some(input) =>
+            let root = buildTree(input)
+            let solution = Solution()
+            let result = solution.inorderTraversal(root)
+            
+            stdout.write("中序遍历结果为：")
+            stdout.writeln(result.toString()) // 打印 ArrayList 结果 [3]
+        case None => 
+            stdout.writeln("未获取到输入")
+    }
+}
