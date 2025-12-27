@@ -1,34 +1,109 @@
 package leetcode160
 
-/**
- * Definition for singly-linked list.
- * public class ListNode {
- *     public var val: Int64
- *     public var next: ?ListNode
- *     public init() {
- *         val = 0
- *         next = None
- *     }
- *     public init(val: Int64) {
- *         this.val = val
- *         next = None
- *     }
- * }
- */
+import std.console.* // 用于终端输入输出
+import std.convert.* // 用于字符串转数值
 
-class Solution {
-    func reverseList(head: ?ListNode): ?ListNode {
-        var prev: ?ListNode = None // 初始前驱节点为空 [2]
-        var curr = head
-
-        // 使用 while 配合模式匹配解构 Option 类型，遍历链表 [5]
-        while (let Some(node) <- curr) {
-            let nextNode = node.next   // 1. 临时保存当前节点的下一个节点，防止断链 [5]
-            node.next = prev           // 2. 将当前节点指向前一个节点，实现反转
-            prev = curr                // 3. prev 指针向后移动
-            curr = nextNode            // 4. curr 指针向后移动
-        }
-
-        return prev // 最终 prev 指向原链表的尾节点，即新链表的头节点
+// 定义链表节点
+class ListNode {
+    public var val: Int64
+    public var next: ?ListNode
+    public init(val: Int64) {
+        this.val = val
+        this.next = None
     }
 }
+
+class Solution {
+    public func isPalindrome(head: ?ListNode): Bool {
+        // 使用 match 显式处理 None，规避类型推导错误 [5][6]
+        let h = match (head) {
+            case None => return true
+            case Some(v) => v
+        }
+        
+        // 模式匹配处理 next 节点，避免使用未实现 Equatable 的 == 判等 [2]
+        if (let None <- h.next) {
+            return true
+        }
+
+        // 1. 快慢指针找中点
+        var slow: ?ListNode = head
+        var fast: ?ListNode = head
+        while (let Some(f) <- fast) {
+            if (let Some(nxt) <- f.next) {
+                fast = nxt.next
+                if (let Some(s) <- slow) {
+                    slow = s.next
+                }
+            } else {
+                break
+            }
+        }
+
+        // 2. 反转后半部分
+        var prev: ?ListNode = None
+        var curr = slow
+        while (let Some(node) <- curr) {
+            let nextNode = node.next
+            node.next = prev
+            prev = curr
+            curr = nextNode
+        }
+
+        // 3. 比较数值
+        var left = head
+        var right = prev
+        var result = true
+        while (let Some(rNode) <- right) {
+            if (let Some(lNode) <- left) {
+                if (lNode.val != rNode.val) {
+                    result = false
+                    break
+                }
+                left = lNode.next
+                right = rNode.next
+            } else {
+                break
+            }
+        }
+        return result
+    }
+}
+
+// 主函数：支持终端输入
+main() {
+    println("请输入链表数值（以空格隔开，按回车结束）：")
+    let input = Console.stdIn.readln()
+    
+    match (input) {
+        case Some(line) =>
+            let nums = line.split(" ", removeEmpty: true)
+            if (nums.size == 0) {
+                println("结果: true (空链表)")
+                return 0
+            }
+
+            // 根据输入数组构建链表
+            let dummy = ListNode(0)
+            var cur = dummy
+            for (numStr in nums) {
+                try {
+                    let val = Int64.parse(numStr)
+                    let newNode = ListNode(val)
+                    cur.next = newNode
+                    cur = newNode
+                } catch (e: Exception) {
+                    continue
+                }
+            }
+
+            // 调用算法并输出
+            let sol = Solution()
+            let result = sol.isPalindrome(dummy.next)
+            println("是否回文: ${result}")
+
+        case None => println("未检测到输入")
+    }
+    return 0
+}
+
